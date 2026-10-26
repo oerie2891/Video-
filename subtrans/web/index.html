@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>subtrans</title>
+<style>
+  :root {
+    --bg: #fbfaf8; --panel: #ffffff; --ink: #1b1a18; --muted: #6c6a66;
+    --line: #e3e0da; --accent: #2f6f4f; --accent-soft: #e8f1ec;
+    --warn: #8a5a12; --warn-soft: #fdf3e0; --err: #9b2c2c; --err-soft: #fdecec;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17181a; --panel: #1f2124; --ink: #ecebe8; --muted: #9a9894;
+      --line: #32353a; --accent: #76c39a; --accent-soft: #1d2a24;
+      --warn: #e0b060; --warn-soft: #2b2316; --err: #e98c8c; --err-soft: #2c1b1b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17181a; --panel: #1f2124; --ink: #ecebe8; --muted: #9a9894;
+    --line: #32353a; --accent: #76c39a; --accent-soft: #1d2a24;
+    --warn: #e0b060; --warn-soft: #2b2316; --err: #e98c8c; --err-soft: #2c1b1b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 32px 16px 80px; }
+  header { margin-bottom: 24px; }
+  h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 14px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 18px;
+  }
+  .drop {
+    border: 1.5px dashed var(--line); border-radius: var(--radius);
+    padding: 30px 20px; text-align: center; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .drop strong { display: block; font-size: 16px; margin-bottom: 4px; }
+  .drop span { color: var(--muted); font-size: 13px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; margin-top: 18px; }
+  @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } }
+  label.field { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  label.field .hint { font-weight: 400; color: var(--muted); }
+  select, input[type=text], textarea {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--bg); color: var(--ink);
+    font: inherit; font-size: 14px;
+  }
+  textarea { min-height: 62px; resize: vertical; }
+  select[multiple] { min-height: 150px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip {
+    font-size: 12px; padding: 3px 9px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent); border: 1px solid transparent;
+  }
+  .checks { display: flex; flex-wrap: wrap; gap: 10px 16px; }
+  .checks label { font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+  button {
+    font: inherit; font-weight: 600; padding: 10px 18px; border-radius: 8px;
+    border: 1px solid transparent; background: var(--accent); color: #fff;
+    cursor: pointer;
+  }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.ghost { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 500; }
+  button.small { padding: 5px 11px; font-size: 13px; }
+  details { margin-top: 16px; }
+  summary { cursor: pointer; font-size: 14px; font-weight: 600; color: var(--muted); }
+  .actions { display: flex; align-items: center; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+  .job { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; background: var(--panel); }
+  .job-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .job-name { font-weight: 600; }
+  .status { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .status.running { color: var(--accent); }
+  .status.error { color: var(--err); }
+  .status.done { color: var(--accent); }
+  .bar { height: 5px; background: var(--line); border-radius: 999px; overflow: hidden; margin: 10px 0 6px; }
+  .bar > i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .4s; }
+  .msg { font-size: 13px; color: var(--muted); }
+  .files { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .files a {
+    font-size: 13px; text-decoration: none; padding: 5px 11px; border-radius: 7px;
+    border: 1px solid var(--line); color: var(--ink);
+  }
+  .files a:hover { border-color: var(--accent); color: var(--accent); }
+  .note { font-size: 13px; padding: 8px 11px; border-radius: 8px; margin-top: 8px; }
+  .note.warn { background: var(--warn-soft); color: var(--warn); }
+  .note.err { background: var(--err-soft); color: var(--err); }
+  table.cues { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  table.cues td { padding: 5px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+  table.cues td.t { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; width: 1%; }
+  table.cues td.cps { text-align: right; color: var(--muted); width: 1%; }
+  table.cues tr.fast td.cps { color: var(--warn); font-weight: 600; }
+  .metrics { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .banner { font-size: 13px; padding: 10px 13px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); margin-bottom: 18px; }
+  .tier-fair::after { content: " ·"; }
+  footer { margin-top: 30px; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>subtrans</h1>
+    <div class="sub">Subtitles and transcripts from any video or audio. Translate media, subtitles or documents into any language.</div>
+  </header>
+
+  <div id="banner"></div>
+
+  <form class="panel" id="form">
+    <div class="drop" id="drop">
+      <strong id="dropLabel">Choose a file, or drop one here</strong>
+      <span id="dropHint">Video, audio, .srt/.vtt/.ass subtitles, or .txt/.md/.docx documents</span>
+      <input type="file" id="file" hidden>
+    </div>
+
+    <div class="grid">
+      <div>
+        <label class="field" for="source">Spoken / source language
+          <span class="hint">— auto-detect unless the audio is noisy</span></label>
+        <select id="source"><option value="">Auto-detect</option></select>
+
+        <label class="field" for="model" style="margin-top:14px">Transcription model
+          <span class="hint">— bigger is slower and better</span></label>
+        <select id="model"></select>
+
+        <label class="field" style="margin-top:14px">Output formats</label>
+        <div class="checks" id="formats"></div>
+      </div>
+
+      <div>
+        <label class="field" for="targets">Translate into
+          <span class="hint">— ctrl/cmd-click for several; leave empty to only transcribe</span></label>
+        <select id="targets" multiple size="8"></select>
+        <div class="chips" id="targetChips"></div>
+      </div>
+    </div>
+
+    <details>
+      <summary>Advanced</summary>
+      <div class="grid">
+        <div>
+          <label class="field" for="prompt">Vocabulary hint
+            <span class="hint">— names and jargon in the audio</span></label>
+          <input type="text" id="prompt" placeholder="Kubernetes, Grafana, Ana Sofía">
+
+          <label class="field" for="formality" style="margin-top:14px">Register</label>
+          <select id="formality">
+            <option value="">Match the source</option>
+            <option value="formal">Formal</option>
+            <option value="informal">Informal</option>
+          </select>
+        </div>
+        <div>
+          <label class="field" for="notes">Translator notes
+            <span class="hint">— domain, audience, conventions</span></label>
+          <textarea id="notes" placeholder="Medical lecture. Keep Latin anatomical terms untranslated."></textarea>
+
+          <div class="checks" style="margin-top:14px">
+            <label><input type="checkbox" id="includeSource" checked> Keep original language files</label>
+            <label><input type="checkbox" id="vad" checked> Skip silence (VAD)</label>
+            <label><input type="checkbox" id="normalize" checked> Level audio first</label>
+            <label><input type="checkbox" id="stamps" checked> Timecodes in text output</label>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button type="submit" id="go" disabled>Start</button>
+      <span class="msg" id="formMsg"></span>
+    </div>
+  </form>
+
+  <h2 style="font-size:16px;margin:26px 0 12px">Jobs</h2>
+  <div id="jobs"><div class="msg">Nothing yet.</div></div>
+
+  <footer>
+    Reading speed is shown in characters per second; values above the
+    language's limit are flagged so you can spot cues that play too fast.
+  </footer>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let meta = null;
+let chosen = null;
+const polling = new Map();
+
+async function boot() {
+  try {
+    meta = await (await fetch('/api/meta')).json();
+  } catch (e) {
+    $('banner').innerHTML = '<div class="banner">Could not reach the API.</div>';
+    return;
+  }
+  const notices = [];
+  if (!meta.ffmpeg) notices.push('ffmpeg was not found — media files cannot be read. Install ffmpeg.');
+  const asrOk = meta.asr_backends.some(b => b.available);
+  if (!asrOk) notices.push('No transcription backend is ready: ' +
+    meta.asr_backends.map(b => b.name + ' (' + b.reason + ')').join('; '));
+  const mt = meta.mt_backends.find(b => b.available);
+  if (!mt) notices.push('No translation backend is ready, so only transcription will work. ' +
+    'Set ANTHROPIC_API_KEY for the best quality, or install the offline model.');
+  if (notices.length) {
+    $('banner').innerHTML = notices.map(n => '<div class="banner">' + esc(n) + '</div>').join('');
+  }
+
+  const tierLabel = { good: '', fair: ' (fair accuracy)', limited: ' (limited accuracy)' };
+  for (const lang of meta.languages) {
+    $('source').insertAdjacentHTML('beforeend',
+      `<option value="${lang.code}">${esc(lang.name)}${tierLabel[lang.tier] || ''}</option>`);
+    $('targets').insertAdjacentHTML('beforeend',
+      `<option value="${lang.code}">${esc(lang.name)}</option>`);
+  }
+  for (const m of meta.models) {
+    const sel = m === meta.default_model ? ' selected' : '';
+    $('model').insertAdjacentHTML('beforeend', `<option value="${m}"${sel}>${m}</option>`);
+  }
+  for (const f of meta.formats) {
+    const on = f === 'srt' ? ' checked' : '';
+    $('formats').insertAdjacentHTML('beforeend',
+      `<label><input type="checkbox" name="fmt" value="${f}"${on}> ${f}</label>`);
+  }
+  $('dropHint').textContent = 'Video, audio, subtitles or documents · up to ' +
+    Math.round(meta.max_upload_bytes / 1048576) + ' MB';
+  refreshJobs();
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+$('drop').onclick = () => $('file').click();
+$('drop').ondragover = (e) => { e.preventDefault(); $('drop').classList.add('over'); };
+$('drop').ondragleave = () => $('drop').classList.remove('over');
+$('drop').ondrop = (e) => {
+  e.preventDefault(); $('drop').classList.remove('over');
+  if (e.dataTransfer.files.length) setFile(e.dataTransfer.files[0]);
+};
+$('file').onchange = (e) => { if (e.target.files.length) setFile(e.target.files[0]); };
+
+function setFile(f) {
+  chosen = f;
+  const mb = (f.size / 1048576).toFixed(1);
+  $('dropLabel').textContent = f.name;
+  $('dropHint').textContent = mb + ' MB — click to choose a different file';
+  $('go').disabled = false;
+  $('formMsg').textContent = '';
+}
+
+$('targets').onchange = () => {
+  const picked = [...$('targets').selectedOptions].map(o => o.text);
+  $('targetChips').innerHTML = picked.map(p => `<span class="chip">${esc(p)}</span>`).join('');
+};
+
+$('form').onsubmit = async (e) => {
+  e.preventDefault();
+  if (!chosen) return;
+  const formats = [...document.querySelectorAll('input[name=fmt]:checked')].map(c => c.value);
+  if (!formats.length) { $('formMsg').textContent = 'Pick at least one output format.'; return; }
+
+  const body = new FormData();
+  body.append('file', chosen);
+  body.append('targets', [...$('targets').selectedOptions].map(o => o.value).join(','));
+  body.append('source_language', $('source').value);
+  body.append('formats', formats.join(','));
+  body.append('model', $('model').value);
+  body.append('prompt', $('prompt').value);
+  body.append('notes', $('notes').value);
+  body.append('formality', $('formality').value);
+  body.append('include_source', $('includeSource').checked);
+  body.append('vad', $('vad').checked);
+  body.append('normalize_audio', $('normalize').checked);
+  body.append('timestamps_in_text', $('stamps').checked);
+
+  $('go').disabled = true;
+  $('formMsg').textContent = 'Uploading…';
+  try {
+    const res = await fetch('/api/jobs', { method: 'POST', body });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Upload failed');
+    $('formMsg').textContent = 'Queued.';
+    watch(data.id);
+    refreshJobs();
+  } catch (err) {
+    $('formMsg').textContent = err.message;
+  } finally {
+    $('go').disabled = false;
+  }
+};
+
+function watch(id) {
+  if (polling.has(id)) return;
+  const timer = setInterval(async () => {
+    try {
+      const job = await (await fetch('/api/jobs/' + id)).json();
+      renderJob(job);
+      if (['done', 'error', 'cancelled'].includes(job.status)) {
+        clearInterval(timer); polling.delete(id);
+        if (job.status === 'done') loadPreview(id);
+      }
+    } catch (e) { clearInterval(timer); polling.delete(id); }
+  }, 900);
+  polling.set(id, timer);
+}
+
+async function refreshJobs() {
+  const data = await (await fetch('/api/jobs')).json();
+  if (!data.jobs.length) { $('jobs').innerHTML = '<div class="msg">Nothing yet.</div>'; return; }
+  $('jobs').innerHTML = '';
+  for (const job of data.jobs) {
+    renderJob(job);
+    if (['queued', 'running'].includes(job.status)) watch(job.id);
+    else if (job.status === 'done') loadPreview(job.id);
+  }
+}
+
+function fmtTime(s) {
+  const t = Math.max(0, s), h = Math.floor(t / 3600),
+        m = Math.floor(t % 3600 / 60), sec = (t % 60).toFixed(1).padStart(4, '0');
+  return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + sec;
+}
+
+function renderJob(job) {
+  let el = document.getElementById('job-' + job.id);
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'job'; el.id = 'job-' + job.id;
+    $('jobs').prepend(el);
+  }
+  const pct = Math.round((job.progress || 0) * 100);
+  const files = (job.artifacts || []).map(a =>
+    `<a href="/api/jobs/${job.id}/artifacts/${a.index}" download>${esc(a.filename)}</a>`).join('');
+  const notes = (job.warnings || []).map(w => `<div class="note warn">${esc(w)}</div>`).join('');
+  const err = job.error ? `<div class="note err">${esc(job.error)}</div>` : '';
+  const metrics = Object.entries(job.metrics || {}).filter(([, m]) => m && m.cues)
+    .map(([lang, m]) => `${lang}: ${m.cues} cues, ${m.mean_cps} cps avg` +
+      (m.over_cps ? `, ${m.over_cps} too fast` : '')).join(' · ');
+  const cancel = ['queued', 'running'].includes(job.status)
+    ? `<button class="ghost small" onclick="cancelJob('${job.id}')">Cancel</button>` : '';
+
+  el.innerHTML = `
+    <div class="job-head">
+      <span class="job-name">${esc(job.filename)}</span>
+      <span class="status ${job.status}">${job.status}</span>
+      <span class="msg">${job.source_language ? esc(job.source_language) : ''}
+        ${(job.targets || []).length ? '→ ' + job.targets.map(esc).join(', ') : ''}</span>
+      <span style="margin-left:auto">${cancel}</span>
+    </div>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div class="msg">${esc(job.message || '')}${job.elapsed ? ' · ' + job.elapsed + 's' : ''}</div>
+    ${metrics ? `<div class="metrics">${esc(metrics)}</div>` : ''}
+    ${files ? `<div class="files">${files}</div>` : ''}
+    ${err}${notes}
+    <div id="preview-${job.id}"></div>`;
+}
+
+async function cancelJob(id) {
+  await fetch('/api/jobs/' + id + '/cancel', { method: 'POST' });
+}
+
+async function loadPreview(id) {
+  const host = document.getElementById('preview-' + id);
+  if (!host || host.dataset.loaded) return;
+  host.dataset.loaded = '1';
+  try {
+    const data = await (await fetch('/api/jobs/' + id + '/preview?limit=25')).json();
+    if (data.kind === 'text') {
+      host.innerHTML = '<table class="cues">' + data.blocks.map(b =>
+        `<tr><td>${esc(b)}</td></tr>`).join('') + '</table>';
+      return;
+    }
+    const rows = data.cues.map(c => {
+      const fast = c.cps && c.cps > 17 ? ' class="fast"' : '';
+      return `<tr${fast}><td class="t">${fmtTime(c.start)}</td>` +
+             `<td>${c.lines.map(esc).join('<br>')}</td>` +
+             `<td class="cps">${c.cps ?? ''}</td></tr>`;
+    }).join('');
+    const more = data.total > data.cues.length
+      ? `<div class="msg" style="margin-top:6px">${data.total - data.cues.length} more cues — download the file.</div>` : '';
+    host.innerHTML = `<table class="cues">${rows}</table>${more}`;
+  } catch (e) { /* preview is optional */ }
+}
+
+boot();
+</script>
+</body>
+</html>
