@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tubedex"
+version = "0.1.0"
+description = "A personal library of adult video, photo, GIF and magazine links: stats, people, categories, playlists and colour-coded site tags."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+  "yt-dlp>=2025.1.1",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.6"]
+
+[project.scripts]
+tubedex = "tubedex.cli:main"
+
+[project.urls]
+Repository = "https://github.com/oerie2891/video-"
+
+[tool.setuptools]
+packages = ["tubedex"]
+
+[tool.setuptools.package-data]
+tubedex = ["web/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501", "B008"]
