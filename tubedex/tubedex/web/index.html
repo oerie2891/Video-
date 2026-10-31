@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>tubedex</title>
+<style>
+:root {
+  --bg: #f6f6f7; --panel: #ffffff; --ink: #16161a; --muted: #6b6b76; --line: #e3e3e8;
+  --accent: #3b5bdb; --chip: #eeeef2; --danger: #c92a2a; --shadow: 0 1px 2px rgba(0,0,0,.06);
+  --tag-ring: rgba(0,0,0,.18);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f0f12; --panel: #18181c; --ink: #ececf1; --muted: #9a9aa6; --line: #2a2a31;
+    --accent: #7c93ff; --chip: #24242b; --danger: #ff6b6b; --shadow: none;
+    --tag-ring: rgba(255,255,255,.35);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f0f12; --panel: #18181c; --ink: #ececf1; --muted: #9a9aa6; --line: #2a2a31;
+  --accent: #7c93ff; --chip: #24242b; --danger: #ff6b6b; --shadow: none;
+  --tag-ring: rgba(255,255,255,.35);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
+header { position: sticky; top: 0; z-index: 5; display: flex; gap: 12px; align-items: center;
+  padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+header h1 { margin: 0; font-size: 17px; letter-spacing: -.01em; }
+header input[type=search] { flex: 1; min-width: 0; max-width: 520px; padding: 7px 10px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.btn { padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); white-space: nowrap; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.danger { color: var(--danger); }
+.layout { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 53px); }
+aside { border-right: 1px solid var(--line); padding: 14px; background: var(--panel);
+  overflow-y: auto; max-height: calc(100vh - 53px); position: sticky; top: 53px; }
+aside h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+  margin: 18px 0 6px; }
+aside h2:first-child { margin-top: 0; }
+textarea { width: 100%; min-height: 84px; resize: vertical; padding: 8px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--bg); }
+.addrow { display: flex; gap: 6px; margin-top: 6px; }
+.addrow select { flex: 1; padding: 6px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--bg); }
+.msg { font-size: 12px; color: var(--muted); margin-top: 6px; min-height: 1em; }
+.nav { list-style: none; margin: 0; padding: 0; }
+.nav li > button { display: flex; width: 100%; justify-content: space-between; gap: 8px;
+  padding: 5px 8px; border: 0; border-radius: 6px; background: none; text-align: left; }
+.nav li > button:hover { background: var(--chip); }
+.nav li > button.on { background: var(--chip); font-weight: 600; }
+.nav .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+.nav .uncat { font-style: italic; }
+.siterow { display: flex; align-items: center; gap: 6px; }
+.siterow > button:first-child { flex: 1; }
+.swatch { position: relative; width: 22px; height: 22px; border-radius: 6px; flex: none;
+  box-shadow: inset 0 0 0 1px var(--tag-ring); overflow: hidden; }
+.swatch input { position: absolute; inset: -6px; width: 34px; height: 34px; opacity: 0;
+  cursor: pointer; border: 0; padding: 0; }
+.tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11.5px;
+  font-weight: 650; line-height: 18px; box-shadow: inset 0 0 0 1px var(--tag-ring);
+  white-space: nowrap; }
+main { padding: 14px 16px 40px; min-width: 0; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+.toolbar h2 { margin: 0; font-size: 18px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.toolbar select { padding: 6px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--panel); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column;
+  cursor: pointer; }
+.card:hover { border-color: var(--muted); }
+.thumb { position: relative; aspect-ratio: 16 / 9; background: var(--chip); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+body.blur .thumb img { filter: blur(14px); transform: scale(1.1); }
+body.nothumbs .thumb { display: none; }
+.thumb .badge { position: absolute; padding: 1px 6px; border-radius: 5px; font-size: 11px;
+  background: rgba(0,0,0,.72); color: #fff; }
+.thumb .kind { left: 6px; top: 6px; text-transform: uppercase; letter-spacing: .04em; }
+.thumb .dur { right: 6px; bottom: 6px; font-variant-numeric: tabular-nums; }
+.cbody { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 5px; }
+.cbody h3 { margin: 0; font-size: 14px; line-height: 1.35; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sub { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+.stats { font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.nb { white-space: nowrap; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font-size: 11.5px; padding: 1px 7px; border-radius: 6px; background: var(--chip);
+  border: 0; }
+.status { font-size: 12px; }
+.status.pending { color: var(--accent); }
+.status.error { color: var(--danger); }
+.empty { color: var(--muted); padding: 40px 0; text-align: center; }
+dialog { width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 32px);
+  border: 1px solid var(--line); border-radius: 14px; padding: 0; background: var(--panel);
+  color: var(--ink); }
+dialog::backdrop { background: rgba(0,0,0,.5); }
+.dhead { display: flex; gap: 10px; align-items: flex-start; padding: 14px 16px;
+  border-bottom: 1px solid var(--line); }
+.dhead h2 { margin: 0; flex: 1; font-size: 17px; overflow-wrap: anywhere; }
+.dbody { padding: 14px 16px; overflow-y: auto; }
+.statgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px; margin-bottom: 14px; }
+.stat { background: var(--bg); border-radius: 10px; padding: 8px 10px; }
+.stat b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 11.5px; color: var(--muted); }
+.kv { display: grid; grid-template-columns: 110px 1fr; gap: 6px 12px; margin: 0 0 14px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; overflow-wrap: anywhere; }
+form.edit { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px; }
+form.edit label { display: flex; flex-direction: column; gap: 3px; font-size: 12px;
+  color: var(--muted); }
+form.edit label.wide { grid-column: 1 / -1; }
+form.edit input, form.edit select { padding: 6px 8px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.lock { font-size: 10px; color: var(--accent); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.warn { font-size: 12px; color: var(--muted); margin: 0 0 12px; padding-left: 18px; }
+details { margin-bottom: 12px; }
+summary { cursor: pointer; color: var(--muted); }
+.menu-btn { display: none; }
+@media (max-width: 760px) {
+  .layout { grid-template-columns: 1fr; }
+  aside { display: none; position: static; max-height: none; border-right: 0;
+    border-bottom: 1px solid var(--line); }
+  body.menu aside { display: block; }
+  .menu-btn { display: inline-block; }
+  header h1 { display: none; }
+  .grid { grid-template-columns: 1fr; }
+  .kv { grid-template-columns: 90px 1fr; }
+}
+</style>
+</head>
+<body>
+<header>
+  <button class="btn menu-btn" id="menuBtn" aria-label="Menu">☰</button>
+  <h1>tubedex</h1>
+  <input type="search" id="q" placeholder="Search titles, channels, people, categories…" aria-label="Search">
+  <button class="btn" id="thumbBtn" title="Show, blur or hide thumbnails">Thumbnails: show</button>
+</header>
+<div class="layout">
+  <aside>
+    <h2>Add links</h2>
+    <form id="addForm">
+      <textarea id="urls" placeholder="Paste one or more links, one per line" aria-label="Links"></textarea>
+      <div class="addrow">
+        <select id="kind" aria-label="Kind">
+          <option value="">Detect kind</option>
+          <option value="video">Video</option><option value="photo">Photo</option>
+          <option value="gif">GIF</option><option value="magazine">Magazine</option>
+          <option value="link">Other link</option>
+        </select>
+        <button class="btn primary" type="submit">Add</button>
+      </div>
+      <div class="msg" id="addMsg"></div>
+    </form>
+    <h2>Library</h2>
+    <ul class="nav" id="libNav"></ul>
+    <h2>Playlists (by category)</h2>
+    <ul class="nav" id="plNav"></ul>
+    <h2>Websites</h2>
+    <ul class="nav" id="siteNav"></ul>
+  </aside>
+  <main>
+    <div class="toolbar">
+      <h2 id="viewTitle">All items</h2>
+      <span class="sub" id="count"></span>
+      <select id="sort" aria-label="Sort">
+        <option value="title">Title (symbols, 0-9, A-Z)</option>
+        <option value="views">Most views</option>
+        <option value="likes">Most likes</option>
+        <option value="comments">Most comments</option>
+        <option value="published">Newest published</option>
+        <option value="added">Recently added</option>
+      </select>
+    </div>
+    <div class="grid" id="grid"></div>
+  </main>
+</div>
+<dialog id="detail"></dialog>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) =>
+  ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const num = (v) => v == null ? "–" : v >= 1e6 ? (v / 1e6).toFixed(v >= 1e7 ? 0 : 1) + "M"
+  : v >= 1e4 ? Math.round(v / 1e3) + "K" : v.toLocaleString();
+const full = (v) => v == null ? "–" : v.toLocaleString();
+const dur = (s) => { if (!s) return ""; const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60),
+  x = String(s % 60).padStart(2, "0"); return h ? `${h}:${String(m).padStart(2, "0")}:${x}` : `${m}:${x}`; };
+const tagHtml = (site) => `<span class="tag" style="background:${esc(site.color)};color:${esc(site.text_color)}">${esc(site.name)}</span>`;
+
+const store = {
+  get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+
+let view = {type: "all", label: "All items"};
+let items = [];
+let pollTimer = null;
+let openId = null;
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, {headers: {"Content-Type": "application/json"}, ...opts});
+  if (!res.ok) {
+    let detail = res.statusText;
+    try { detail = (await res.json()).detail || detail; } catch {}
+    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+  }
+  return res.json();
+}
+
+function params() {
+  const p = new URLSearchParams({sort: $("#sort").value});
+  const q = $("#q").value.trim();
+  if (q) p.set("q", q);
+  if (view.type === "category") p.set("category", view.value);
+  if (view.type === "uncategorised") p.set("uncategorised", "true");
+  if (view.type === "site") p.set("site", view.value);
+  if (view.type === "kind") p.set("kind", view.value);
+  if (view.type === "person") p.set("person", view.value);
+  if (view.type === "tag") p.set("tag", view.value);
+  return p;
+}
+
+async function loadItems() {
+  items = await api("/api/items?" + params());
+  renderGrid();
+  const busy = items.some((i) => i.status === "pending");
+  clearTimeout(pollTimer);
+  if (busy) pollTimer = setTimeout(refreshAll, 1500);
+}
+
+async function refreshAll() {
+  await Promise.all([loadItems(), loadSidebar()]);
+  if (openId != null && !$("#detail form.edit:focus-within")) {
+    try { renderDetail(await api(`/api/items/${openId}`)); } catch {}
+  }
+}
+
+function renderGrid() {
+  $("#viewTitle").textContent = view.label;
+  $("#count").textContent = `${items.length} item${items.length === 1 ? "" : "s"}`;
+  if (!items.length) {
+    $("#grid").innerHTML = `<div class="empty">Nothing here yet. Paste links in the box on the left.</div>`;
+    return;
+  }
+  $("#grid").innerHTML = items.map((i) => {
+    const status = i.status === "pending" ? `<div class="status pending">Fetching stats…</div>`
+      : i.status === "error" ? `<div class="status error">Couldn't read this link: ${esc(i.error || "")}</div>` : "";
+    const cats = i.categories.slice(0, 6).map((c) =>
+      `<button class="chip" data-cat="${esc(c)}">${esc(c)}</button>`).join("");
+    const bits = [i.views != null && `${num(i.views)} views`, i.likes != null && `${num(i.likes)} likes`,
+      i.comments != null && `${num(i.comments)} comments`, i.published].filter(Boolean)
+      .map((b) => `<span class="nb">${esc(b)}</span>`).join(" · ");
+    return `<article class="card" data-id="${i.id}">
+      <div class="thumb">${i.thumbnail ? `<img loading="lazy" referrerpolicy="no-referrer" src="${esc(i.thumbnail)}" alt="" onerror="this.remove()">` : ""}
+        <span class="badge kind">${esc(i.kind)}</span>${i.duration ? `<span class="badge dur">${dur(i.duration)}</span>` : ""}</div>
+      <div class="cbody">
+        <div>${tagHtml(i.site)}</div>
+        <h3>${esc(i.title || i.url)}</h3>
+        ${i.channel ? `<div class="sub">by ${esc(i.channel)}</div>` : ""}
+        ${i.people.length ? `<div class="sub">With ${esc(i.people.join(", "))}</div>` : ""}
+        ${bits ? `<div class="stats">${bits}</div>` : ""}
+        ${cats ? `<div class="chips">${cats}</div>` : ""}
+        ${status}
+      </div></article>`;
+  }).join("");
+}
+
+async function loadSidebar() {
+  const [meta, lists, sites] = await Promise.all([api("/api/meta"), api("/api/playlists"), api("/api/sites?used=true")]);
+  const s = meta.summary;
+  const kinds = [["video", "Videos"], ["photo", "Photos"], ["gif", "GIFs"], ["magazine", "Magazines"], ["link", "Other links"]];
+  const lib = [{type: "all", label: "All items", n: s.items}]
+    .concat(kinds.filter(([k]) => s.kinds[k]).map(([k, label]) => ({type: "kind", value: k, label, n: s.kinds[k]})));
+  $("#libNav").innerHTML = lib.map((v) => navItem(v, v.label, v.n)).join("");
+  $("#plNav").innerHTML = lists.length ? lists.map((p) => p.uncategorised
+    ? navItem({type: "uncategorised", label: "Uncategorised"}, "Uncategorised", p.count, "uncat")
+    : navItem({type: "category", value: p.name, label: p.name}, p.name, p.count)).join("")
+    : `<li class="sub">Categories appear here as links are added.</li>`;
+  $("#siteNav").innerHTML = sites.length ? sites.map((site) => `<li class="siterow">
+      ${navItem({type: "site", value: site.key, label: site.name}, tagHtml(site), site.count, "", true)}
+      <span class="swatch" style="background:${esc(site.color)}" title="Change ${esc(site.name)}'s colour (${esc(site.color)})">
+        <input type="color" value="${esc(site.color.toLowerCase())}" data-site="${esc(site.key)}" aria-label="Colour for ${esc(site.name)}">
+      </span></li>`).join("")
+    : `<li class="sub">No websites yet.</li>`;
+}
+
+function navItem(v, label, n, cls = "", raw = false) {
+  const on = v.type === view.type && (v.value ?? null) === (view.value ?? null) ? " on" : "";
+  const body = raw ? label : esc(label);
+  const button = `<button class="${cls}${on}" data-view='${esc(JSON.stringify(v))}'><span>${body}</span><span class="n">${n ?? ""}</span></button>`;
+  return raw ? button : `<li>${button}</li>`;
+}
+
+function setView(v) {
+  view = v;
+  document.body.classList.remove("menu");
+  loadItems();
+  loadSidebar();
+}
+
+document.addEventListener("click", (e) => {
+  const nav = e.target.closest("[data-view]");
+  if (nav) { setView(JSON.parse(nav.dataset.view)); return; }
+  const cat = e.target.closest("[data-cat]");
+  if (cat) { e.stopPropagation(); setView({type: "category", value: cat.dataset.cat, label: cat.dataset.cat}); $("#detail").close(); return; }
+  const person = e.target.closest("[data-person]");
+  if (person) { setView({type: "person", value: person.dataset.person, label: person.dataset.person}); $("#detail").close(); return; }
+  const card = e.target.closest(".card");
+  if (card) openDetail(Number(card.dataset.id));
+});
+
+document.addEventListener("change", async (e) => {
+  const input = e.target.closest("input[data-site]");
+  if (!input) return;
+  try { await api(`/api/sites/${encodeURIComponent(input.dataset.site)}`, {method: "PATCH", body: JSON.stringify({color: input.value})}); }
+  catch (err) { alert(err.message); }
+  refreshAll();
+});
+
+async function openDetail(id) {
+  openId = id;
+  renderDetail(await api(`/api/items/${id}`));
+  if (!$("#detail").open) $("#detail").showModal();
+}
+
+function renderDetail(i) {
+  const locked = new Set(i.locked);
+  const lk = (f) => locked.has(f) ? ` <span class="lock" title="Edited by hand; refresh keeps it">edited</span>` : "";
+  const stat = (label, v, fmt = full) => `<div class="stat"><b>${v == null ? "–" : fmt(v)}</b><span>${label}</span></div>`;
+  const hist = i.history || [];
+  let growth = "";
+  if (hist.length > 1 && hist[0].views != null && hist.at(-1).views != null) {
+    growth = stat(`views gained over ${hist.length} fetches`, hist.at(-1).views - hist[0].views);
+  }
+  const field = (name, label, value, type = "text", wide = false) =>
+    `<label class="${wide ? "wide" : ""}">${label}${lk(name)}<input name="${name}" type="${type}" value="${esc(value ?? "")}"></label>`;
+  const people = i.people.map((p) => `<button class="chip" data-person="${esc(p)}">${esc(p)}</button>`).join(" ");
+  const cats = i.categories.map((c) => `<button class="chip" data-cat="${esc(c)}">${esc(c)}</button>`).join(" ");
+  const sources = Object.entries(i.sources || {}).map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(" · ");
+  $("#detail").innerHTML = `
+    <div class="dhead">${tagHtml(i.site)}<h2>${esc(i.title || i.url)}</h2>
+      <button class="btn" id="dClose" aria-label="Close">✕</button></div>
+    <div class="dbody">
+      <div class="statgrid">
+        ${stat("views", i.views)}${stat("likes", i.likes)}${i.dislikes != null ? stat("dislikes", i.dislikes) : ""}
+        ${i.rating != null ? stat("liked", i.rating, (v) => v + "%") : ""}
+        ${stat("comments", i.comments)}${i.views_per_day != null ? stat("views per day", i.views_per_day) : ""}
+        ${stat("published", i.published, (v) => v)}${i.duration ? stat("duration", i.duration, dur) : ""}
+        ${i.height ? stat("best quality", i.height, (v) => v + "p") : ""}${growth}
+      </div>
+      <dl class="kv">
+        <dt>Website</dt><dd>${esc(i.site.name)} <span class="sub">${esc(i.site.color)}</span></dd>
+        <dt>Channel</dt><dd>${i.channel ? (i.channel_url ? `<a href="${esc(i.channel_url)}" target="_blank" rel="noreferrer">${esc(i.channel)}</a>` : esc(i.channel)) : "–"}</dd>
+        <dt>People</dt><dd>${people || "–"}</dd>
+        <dt>Categories</dt><dd>${cats || "–"}</dd>
+        <dt>Tags</dt><dd>${esc(i.tags.join(", ")) || "–"}</dd>
+        <dt>Kind</dt><dd>${esc(i.kind)}</dd>
+        <dt>Link</dt><dd><a href="${esc(i.page_url || i.url)}" target="_blank" rel="noreferrer">${esc(i.page_url || i.url)}</a></dd>
+        <dt>Status</dt><dd class="status ${esc(i.status)}">${esc(i.status)}${i.error ? " — " + esc(i.error) : ""}${i.fetched_at ? ` <span class="sub">· fetched ${esc(i.fetched_at.slice(0, 16).replace("T", " "))} UTC</span>` : ""}</dd>
+      </dl>
+      ${i.warnings.length ? `<ul class="warn">${i.warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` : ""}
+      ${sources ? `<details><summary>Where each value came from</summary><p class="sub">${sources}</p></details>` : ""}
+      <details ${i.status === "error" || i.status === "partial" ? "open" : ""}><summary>Edit or fill in details</summary>
+      <form class="edit" id="editForm">
+        ${field("title", "Title", i.title, "text", true)}
+        <label>Kind${lk("kind")}<select name="kind">${["video", "photo", "gif", "magazine", "link"].map((k) =>
+          `<option ${k === i.kind ? "selected" : ""}>${k}</option>`).join("")}</select></label>
+        ${field("channel", "Channel / uploader / publisher", i.channel)}
+        ${field("published", "Published", i.published, "date")}
+        ${field("people", "People (comma-separated)", i.people.join(", "), "text", true)}
+        ${field("categories", "Categories (comma-separated)", i.categories.join(", "), "text", true)}
+        ${field("tags", "Tags (comma-separated)", i.tags.join(", "), "text", true)}
+        ${field("views", "Views", i.views, "number")}${field("likes", "Likes", i.likes, "number")}
+        ${field("dislikes", "Dislikes", i.dislikes, "number")}${field("comments", "Comments", i.comments, "number")}
+        <div class="actions" style="grid-column:1/-1"><button class="btn primary" type="submit">Save changes</button>
+        ${i.locked.length ? `<button class="btn" type="button" id="dUnlock">Undo hand edits on next refresh</button>` : ""}</div>
+      </form></details>
+      <div class="actions">
+        <a class="btn" href="${esc(i.page_url || i.url)}" target="_blank" rel="noreferrer">Open link</a>
+        <button class="btn" id="dRefresh">Refresh stats</button>
+        <button class="btn danger" id="dDelete">Delete</button>
+      </div>
+    </div>`;
+  $("#dClose").onclick = () => $("#detail").close();
+  $("#dRefresh").onclick = async () => { await api(`/api/items/${i.id}/refresh`, {method: "POST"});
+    renderDetail({...i, status: "pending"}); setTimeout(refreshAll, 800); };
+  $("#dDelete").onclick = async () => { if (!confirm("Delete this item from the library?")) return;
+    await api(`/api/items/${i.id}`, {method: "DELETE"}); $("#detail").close(); refreshAll(); };
+  if ($("#dUnlock")) $("#dUnlock").onclick = async () => { renderDetail(await api(`/api/items/${i.id}/unlock`, {method: "POST"})); };
+  $("#editForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const form = new FormData(e.target);
+    const original = {...i, people: i.people.join(", "), categories: i.categories.join(", "), tags: i.tags.join(", ")};
+    const changes = {};
+    for (const [k, v] of form.entries()) {
+      if (String(original[k] ?? "") === v) continue;
+      changes[k] = ["people", "categories", "tags"].includes(k) ? v.split(",").map((x) => x.trim()).filter(Boolean)
+        : ["views", "likes", "dislikes", "comments"].includes(k) ? (v === "" ? null : Number(v)) : v;
+    }
+    if (!Object.keys(changes).length) return;
+    try { renderDetail(await api(`/api/items/${i.id}`, {method: "PATCH", body: JSON.stringify(changes)})); refreshAll(); }
+    catch (err) { alert(err.message); }
+  };
+}
+
+$("#detail").addEventListener("close", () => { openId = null; });
+
+$("#addForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const urls = $("#urls").value.split(/\s+/).map((u) => u.trim()).filter(Boolean);
+  if (!urls.length) return;
+  $("#addMsg").textContent = "Adding…";
+  try {
+    const res = await api("/api/items", {method: "POST", body: JSON.stringify({urls, kind: $("#kind").value || null})});
+    const parts = [`${res.added.length} added`];
+    if (res.existing.length) parts.push(`${res.existing.length} already in the library`);
+    if (res.rejected.length) parts.push(`${res.rejected.length} not a link`);
+    $("#addMsg").textContent = parts.join(" · ");
+    $("#urls").value = res.rejected.map((r) => r.url).join("\n");
+    if (view.type !== "all") view = {type: "all", label: "All items"};
+    $("#sort").value = "added";
+    refreshAll();
+  } catch (err) { $("#addMsg").textContent = err.message; }
+};
+
+const modes = ["show", "blur", "hide"];
+function applyThumbs(mode) {
+  document.body.classList.toggle("blur", mode === "blur");
+  document.body.classList.toggle("nothumbs", mode === "hide");
+  $("#thumbBtn").textContent = `Thumbnails: ${mode}`;
+  store.set("tubedex.thumbs", mode);
+}
+$("#thumbBtn").onclick = () => {
+  const now = store.get("tubedex.thumbs", "show");
+  applyThumbs(modes[(modes.indexOf(now) + 1) % modes.length]);
+};
+$("#menuBtn").onclick = () => document.body.classList.toggle("menu");
+let qTimer;
+$("#q").addEventListener("input", () => { clearTimeout(qTimer); qTimer = setTimeout(loadItems, 200); });
+$("#sort").onchange = () => { store.set("tubedex.sort", $("#sort").value); loadItems(); };
+
+applyThumbs(store.get("tubedex.thumbs", "show"));
+$("#sort").value = store.get("tubedex.sort", "title");
+refreshAll();
+</script>
+</body>
+</html>
